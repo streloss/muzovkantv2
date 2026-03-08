@@ -24,6 +24,7 @@ you can then edit the config.py to your liking.
 
 ## contacting
 if you have any feedback, contact me on github issues or/and discord. if you want to add any functions to this bot, make a PR.
+when submitting a bug report, make sure to attach the bot.log files. they generate automatically in root directory.
 
 *discord: rejnronuz*
 
