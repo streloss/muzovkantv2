@@ -5,13 +5,17 @@ you can use this as a base for your discord bot, writing your own [cogs](/cogs/)
 
 
 ## installation
-firstly, clone the repo
+1. clone the repo
 ```
 git clone https://github.com/rejnronuzz/muzovkantv2.git
 cd muzovkantv2
 ```
-then insert your discord bot and [thecatapi](https://thecatapi.com) token into the .env file.
-it should look something like this:
+2. install the requirements
+```
+pip install -r requirements.txt
+```
+3. insert your discord bot token and [thecatapi](https://thecatapi.com) token into the .env file.
+*it should look something like this:*
 ```
 DISCORD_TOKEN=abc123abc
 CAT_API_KEY=live_abc123abc
