@@ -26,6 +26,7 @@ the bot is running when the main.py script is running.
 
 ### systemd service
 you can configure a systemd service for this bot.
+[systemd_service.sh](systemd_service.sh) is ONLY for systemd systems. 
 
 (*tested on Ubuntu 24.04*)
 
@@ -38,7 +39,6 @@ the systemd service will now start and auto start on reboot.
 
 ### updating with systemd service
 keep in mind that after updating with the systemd service enabled, you will need to restart the service.
-[systemd_service.sh](systemd_service.sh) is ONLY for systemd systems. 
 so the update workflow looks something like this:
 ```
 git pull origin main
