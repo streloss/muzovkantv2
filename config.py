@@ -1,4 +1,3 @@
-python
 import os
 from dotenv import load_dotenv
 
@@ -41,3 +40,4 @@ HELP_TEXT = (
     "префикс: `!`\n"
     "в лс отпишите по предложениям че в бота докинуть"
 )
+
