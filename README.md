@@ -2,8 +2,6 @@
 ### shitty (half-)vibecoded discord bot
 ## overall
 you can use this as a base for your discord bot by writing your own [cogs](/cogs/), or as is.
-keep in mind that [systemd_service.sh](systemd_service.sh) is ONLY for systemd. 
-
 
 ## installation
 1. clone the repo
@@ -40,6 +38,7 @@ the systemd service will now start and auto start on reboot.
 
 ### updating with systemd service
 keep in mind that after updating with the systemd service enabled, you will need to restart the service.
+[systemd_service.sh](systemd_service.sh) is ONLY for systemd systems. 
 so the update workflow looks something like this:
 ```
 git pull origin main
