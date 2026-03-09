@@ -10,13 +10,8 @@ you can use this as a base for your discord bot by writing your own [cogs](/cogs
 git clone https://github.com/rejnronuzz/muzovkantv2.git
 cd muzovkantv2
 ```
-2. install the requirements
+2. install the requirements. you might need to enter a venv on some systems.
 ```bash
-pip install -r requirements.txt
-
-# you can also do it in a venv:
-python -m venv venv
-source venv/bin/activate
 pip install -r requirements.txt
 ```
 3. insert your discord bot token and [thecatapi](https://thecatapi.com) token into the .env file.
