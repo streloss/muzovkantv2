@@ -28,7 +28,8 @@ the bot is running when the main.py script is running.
 
 ### systemd service
 you can configure a systemd service for this bot.
-*tested on Ubuntu 24.04*
+
+(*tested on Ubuntu 24.04*)
 
 simply do:
 ```
