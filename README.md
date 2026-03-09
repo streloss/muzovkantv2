@@ -1,7 +1,7 @@
 # muzovkantV2
 ### shitty (half-)vibecoded discord bot
 ## overall
-you can use this as a base for your discord bot, writing your own [cogs](/cogs/), or as is.
+you can use this as a base for your discord bot by writing your own [cogs](/cogs/), or as is.
 
 
 ## installation
@@ -10,7 +10,7 @@ you can use this as a base for your discord bot, writing your own [cogs](/cogs/)
 git clone https://github.com/rejnronuzz/muzovkantv2.git
 cd muzovkantv2
 ```
-2. install the requirements
+2. install the requirements. you might need to enter a venv on some systems.
 ```bash
 pip install -r requirements.txt
 ```
