@@ -3,6 +3,7 @@ from discord.ext import commands
 import config
 from utils.data_manager import save_message_id, load_message_id
 import logging
+import asyncio
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +21,9 @@ class RoleManager(commands.Cog):
             logger.info("Initialized role message with id: %s", self.role_message_id)
         else:
             logger.info("No role message found")
+        asyncio.ensure_future(self._startup())
 
+    async def _startup(self):
         await self.bot.wait_until_ready()
         if self.role_message_id:
             await self.check_and_sync_roles()

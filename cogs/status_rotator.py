@@ -4,6 +4,7 @@ import json
 import random
 import logging
 from typing import Optional
+import asyncio
 
 logger = logging.getLogger(__name__)
 
@@ -18,8 +19,12 @@ class StatusRotator(commands.Cog):
 
     async def cog_load(self):
         await self.load_statuses()
-        self.rotate_status.start()
         logger.info("Status rotator initialized with %d statuses", len(self.statuses))
+        asyncio.ensure_future(self._startup())
+
+    async def _startup(self):
+        await self.bot.wait_until_ready()
+        self.rotate_status.start()
 
     async def cog_unload(self):
         self.rotate_status.cancel()
