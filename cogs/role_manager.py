@@ -1,9 +1,11 @@
+import asyncio
+import logging
+
 import discord
 from discord.ext import commands
+
 import config
 from utils.data_manager import save_message_id, load_message_id
-import logging
-import asyncio
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +23,7 @@ class RoleManager(commands.Cog):
             logger.info("Initialized role message with id: %s", self.role_message_id)
         else:
             logger.info("No role message found")
-        asyncio.ensure_future(self._startup())
+        asyncio.create_task(self._startup())
 
     async def _startup(self):
         await self.bot.wait_until_ready()
@@ -42,6 +44,7 @@ class RoleManager(commands.Cog):
 
         emoji = str(payload.emoji)
         if emoji not in self.REACTION_ROLES:
+            logger.debug("Unknown emoji reaction: %s", emoji)
             return
 
         guild = self.bot.get_guild(payload.guild_id)
@@ -78,6 +81,8 @@ class RoleManager(commands.Cog):
             channel = await self.bot.fetch_channel(self.CHANNEL_ID)
             message = await channel.fetch_message(self.role_message_id)
 
+            users_with_reactions: dict[int, set[int]] = {}
+
             for reaction in message.reactions:
                 emoji = str(reaction.emoji)
                 if emoji not in self.REACTION_ROLES:
@@ -88,13 +93,26 @@ class RoleManager(commands.Cog):
                     logger.warning("Role with id %s not found during sync", self.REACTION_ROLES[emoji])
                     continue
 
+                reacted_ids = set()
                 async for user in reaction.users():
                     if user.bot:
                         continue
+                    reacted_ids.add(user.id)
                     member = message.guild.get_member(user.id)
                     if member and role not in member.roles:
                         await member.add_roles(role)
                         logger.info("Sync gave role '%s' to '%s'", role.name, member.name)
+
+                users_with_reactions[self.REACTION_ROLES[emoji]] = reacted_ids
+
+            for role_id, reacted_ids in users_with_reactions.items():
+                role = message.guild.get_role(role_id)
+                if not role:
+                    continue
+                for member in role.members:
+                    if member.id not in reacted_ids:
+                        await member.remove_roles(role)
+                        logger.info("Sync removed role '%s' from '%s'", role.name, member.name)
 
         except discord.NotFound:
             logger.warning("Role message not found during sync")
@@ -106,18 +124,25 @@ class RoleManager(commands.Cog):
     @commands.hybrid_command()
     @commands.has_permissions(administrator=True)
     async def create_role_message(self, ctx):
-        message = await ctx.send(config.ROLE_MESSAGE_TEXT)
+        channel = self.bot.get_channel(self.CHANNEL_ID)
+        if not channel:
+            await ctx.send("канал не найден")
+            return
+
+        message = await channel.send(config.ROLE_MESSAGE_TEXT)
         for emoji in self.REACTION_ROLES:
             await message.add_reaction(emoji)
 
         self.role_message_id = message.id
         save_message_id(message.id)
         logger.info("Created new role message with id: %s", message.id)
+        await ctx.send("готово", ephemeral=True)
 
     @commands.hybrid_command()
     @commands.has_permissions(administrator=True)
     async def update_role_message(self, ctx):
         if not self.role_message_id:
+            await ctx.send("сообщение с ролями не создано, используй /create_role_message")
             return
 
         try:
@@ -132,11 +157,14 @@ class RoleManager(commands.Cog):
                     await message.add_reaction(emoji)
 
             logger.info("Role message updated by %s", ctx.author.name)
+            await ctx.send("готово", ephemeral=True)
 
         except discord.NotFound:
             logger.warning("Role message not found during update")
+            await ctx.send("сообщение не найдено")
         except discord.Forbidden:
             logger.error("Missing permissions to edit role message")
+            await ctx.send("нет прав на редактирование")
 
 
 async def setup(bot):
