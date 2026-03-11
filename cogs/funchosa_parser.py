@@ -1,21 +1,36 @@
-import discord
-from discord.ext import commands
-from discord import app_commands
+import os
 import asyncio
 import logging
 from datetime import datetime
 from typing import Optional
+from urllib.parse import urlparse
+
+import discord
+from discord.ext import commands
+from discord import app_commands
+
 import config
 from utils.database import FunchosaDatabase
 
 logger = logging.getLogger(__name__)
+
+MAX_ATTACHMENT_PREVIEW = 3
+INCREMENTAL_PARSE_LIMIT = 250
+LOG_EVERY_N_SAVED = 50
+LOG_EVERY_N_SCANNED = 100
+IMAGE_EXTENSIONS = frozenset(('.png', '.jpg', '.jpeg', '.gif', '.webp'))
+
+
+def is_image_url(url: str) -> bool:
+    path = urlparse(url).path
+    return os.path.splitext(path)[1].lower() in IMAGE_EXTENSIONS
 
 
 def build_funchosa_embed(message_data: dict) -> discord.Embed:
     embed = discord.Embed(
         description=message_data['content'] or "*[без текста]*",
         color=discord.Color.blue(),
-        timestamp=datetime.fromisoformat(message_data['timestamp'])
+        timestamp=datetime.fromisoformat(message_data['timestamp']),
     )
     embed.set_author(name='random фунчоза of the day')
     embed.add_field(
@@ -25,27 +40,17 @@ def build_funchosa_embed(message_data: dict) -> discord.Embed:
             f"дата: {message_data['timestamp'].replace('T', ' ')[:19]}\n"
             f"номер в базе: {message_data['id']}"
         ),
-        inline=False
+        inline=False,
     )
 
     if message_data.get('attachments'):
         links = [
             f"[вложение {i}]({att['url']})"
-            for i, att in enumerate(message_data['attachments'][:3], 1)
+            for i, att in enumerate(message_data['attachments'][:MAX_ATTACHMENT_PREVIEW], 1)
         ]
         embed.add_field(name="вложения", value="\n".join(links), inline=False)
 
     return embed
-
-
-def build_funchosa_view() -> discord.ui.View:
-    view = discord.ui.View()
-    view.add_item(discord.ui.Button(
-        label="подавай еще, раб",
-        custom_id="another_random",
-        style=discord.ButtonStyle.secondary
-    ))
-    return view
 
 
 class FunchosaView(discord.ui.View):
@@ -55,7 +60,7 @@ class FunchosaView(discord.ui.View):
         self.add_item(discord.ui.Button(
             label="перейти к сообщению",
             url=message_url,
-            style=discord.ButtonStyle.link
+            style=discord.ButtonStyle.link,
         ))
 
     @discord.ui.button(label="подавай еще, раб", custom_id="another_random", style=discord.ButtonStyle.secondary)
@@ -83,7 +88,7 @@ class FunchosaParser(commands.Cog):
     async def cog_load(self):
         await self.db.init_db()
         logger.info("FunchosaParser initialized")
-        asyncio.ensure_future(self._startup())
+        asyncio.create_task(self._startup())
 
     async def _startup(self):
         await self.bot.wait_until_ready()
@@ -102,13 +107,15 @@ class FunchosaParser(commands.Cog):
         try:
             status = await self.db.get_parsing_status()
             is_first = not status['first_parse_done']
-            limit = None if is_first else 250
+            limit = None if is_first else INCREMENTAL_PARSE_LIMIT
             logger.info("Starting %s parse", "full" if is_first else "incremental")
 
             count = await self._parse_history(channel, limit=limit)
 
             last_id = await self.db.get_last_message_in_db()
-            await self.db.update_parsing_status(first_parse_done=True, last_parsed_message_id=last_id)
+            if last_id is not None:
+                await self.db.update_parsing_status(first_parse_done=True, last_parsed_message_id=last_id)
+
             logger.info("Parsing finished, %d new messages", count)
 
         except Exception as e:
@@ -129,7 +136,7 @@ class FunchosaParser(commands.Cog):
             attachments_data = [
                 {'url': a.url, 'filename': a.filename}
                 for a in message.attachments
-                if a.url.lower().endswith(('png', 'jpg', 'jpeg', 'gif', 'webp'))
+                if is_image_url(a.url)
             ]
 
             message_data = {
@@ -147,7 +154,7 @@ class FunchosaParser(commands.Cog):
             saved = await self.db.save_message(message_data)
             if saved:
                 self.parsed_count += 1
-                if self.parsed_count % 50 == 0:
+                if self.parsed_count % LOG_EVERY_N_SAVED == 0:
                     logger.info("Saved %d messages so far", self.parsed_count)
 
         except Exception as e:
@@ -171,7 +178,7 @@ class FunchosaParser(commands.Cog):
                 await self._save_message(message)
                 count += 1
 
-                if (count + skipped) % 100 == 0:
+                if (count + skipped) % LOG_EVERY_N_SCANNED == 0:
                     logger.info("Progress: +%d new, -%d skipped", count, skipped)
 
             logger.info("Parse done: %d new, %d skipped", count, skipped)
@@ -188,7 +195,7 @@ class FunchosaParser(commands.Cog):
     async def funchosarand(self, ctx, number: Optional[int] = None):
         await ctx.defer()
 
-        if number:
+        if number is not None:
             message_data = await self.db.get_message_by_number(number)
             if not message_data:
                 await ctx.send(f"сообщение с номером {number} не найдено в базе")
@@ -209,13 +216,13 @@ class FunchosaParser(commands.Cog):
         status = await self.db.get_parsing_status()
 
         embed = discord.Embed(title="фунчоза.статы", color=discord.Color.green())
-        embed.add_field(name="сообщений в базе", value=f"**{total}**", inline=True)
+        embed.add_field(name="сообщений в базе", value=f"**{total or 0}**", inline=True)
 
-        if status['last_parsed_message_id']:
+        if status.get('last_parsed_message_id'):
             embed.add_field(
                 name="последнее сообщение",
                 value=f"id: `{status['last_parsed_message_id']}`",
-                inline=False
+                inline=False,
             )
 
         await ctx.send(embed=embed)
