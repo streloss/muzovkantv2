@@ -1,3 +1,12 @@
+## Improved code funchosa_parser.py by strelok and claude :D
+# Удалён мёртвый build_funchosa_view()
+# ensure_future → create_task
+# if number → if number is not None (баг-фикс)
+# Фильтрация вложений через is_image_url() с urlparse вместо .endswith()
+# None-чек для last_id перед обновлением статуса
+# total or 0 в funchosainfo на случай пустой БД
+# Магические числа вынесены в именованные константы вверху файла
+
 import os
 import asyncio
 import logging
@@ -230,3 +239,4 @@ class FunchosaParser(commands.Cog):
 
 async def setup(bot):
     await bot.add_cog(FunchosaParser(bot))
+
