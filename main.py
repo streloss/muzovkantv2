@@ -30,6 +30,9 @@ COGS = [
     'cogs.uptime',
     'cogs.help',
     'cogs.kitty',
+    'cogs/music.py',
+    'cogs/player.py',
+    'cogs/queue.py'
 ]
 
 
@@ -63,4 +66,5 @@ async def main():
 
 
 if __name__ == "__main__":
+
     asyncio.run(main())
