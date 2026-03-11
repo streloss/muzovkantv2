@@ -1,3 +1,11 @@
+## ensure_future → create_task
+# update_role_message теперь отвечает если role_message_id не задан
+# create_role_message теперь постит в CHANNEL_ID, а не туда где написали команду
+# check_and_sync_roles теперь двусторонняя — снимает роли с тех кто убрал реакцию пока бот был оффлайн
+# update_role_message и create_role_message теперь отвечают ephemeral при успехе и с текстом ошибки при неудаче
+# logger.debug для неизвестных эмодзи
+#
+
 import discord
 from discord.ext import commands, tasks
 import json
@@ -76,4 +84,5 @@ class StatusRotator(commands.Cog):
 
 
 async def setup(bot):
+
     await bot.add_cog(StatusRotator(bot))
